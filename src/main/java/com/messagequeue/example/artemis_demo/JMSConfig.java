@@ -20,8 +20,10 @@ public class JMSConfig {
     @Bean
     public DefaultJmsListenerContainerFactory myFactory(ConnectionFactory connectionFactory) {
         DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setConcurrency("1-1");
+        factory.setConnectionFactory(connectionFactory());
+        // 💥 This is the key:
+        factory.setSessionTransacted(true);
+
         return factory;
     }
 

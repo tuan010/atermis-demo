@@ -1,5 +1,8 @@
 package com.messagequeue.example.artemis_demo;
 
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
@@ -13,25 +16,20 @@ public class ArtemisConsumer {
         this.jmsTemplate = jmsTemplate;
     }
 
-    @JmsListener(destination = "DLQ.dlq1", containerFactory = "myFactory")
-    public void listenDLQ1(String message) {
-        System.out.println("Received from DLQ.dlq1: " + message);
-        retry("TCBroker.queue1", message);
-    }
-
-    //Test DLQ
-//    @JmsListener(destination = "TCBroker", containerFactory = "myFactory")
-//    public void listen(String message) throws Exception {
-//        System.out.println("Received: " + message);
-//
-//        // Simulate a failure to trigger DLQ logic
-//        throw new RuntimeException("Simulated failure to trigger DLQ");
+//    @JmsListener(destination = "DLQ::dlq1", containerFactory = "myFactory")
+//    public void dlq1Listener(Message msg) throws JMSException {
+//        String orig = msg.getStringProperty("_AMQ_ORIG_QUEUE");
+//        String body = ((TextMessage) msg).getText();
+//        System.out.println("✅ DLQ1: " + body + " (from: " + orig + ")");
 //    }
 
 
-    private void retry(String originalQueue, String message) {
-        // Retry logic (basic version)
-        System.out.println("Retrying message to original queue: " + originalQueue);
-        jmsTemplate.convertAndSend(originalQueue, message);
+
+    @JmsListener(destination = "TCBroker::queue2", containerFactory = "myFactory")
+    public void failQueue1(Message msg) throws JMSException {
+        String body = ((TextMessage) msg).getText();
+        System.out.println("🔥 FAIL queue2: " + body);
+        throw new RuntimeException("fail queue2");
     }
+
 }
