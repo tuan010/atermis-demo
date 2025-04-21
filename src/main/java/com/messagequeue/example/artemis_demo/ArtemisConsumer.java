@@ -59,37 +59,37 @@ public class ArtemisConsumer {
 //        System.out.println("🔁 Retried to A with x-retried=" + (retries + 1));
 //    }
 
-    @JmsListener(destination = "DLQ2::dlq2", containerFactory = "myFactory")
-    public void retryDLQ(Message message) throws JMSException {
-        int retried = message.propertyExists("xRetried") ? message.getIntProperty("xRetried") : 0;
-        String body = ((TextMessage) message).getText();
-
-        if (retried >= 3) {
-            System.out.println("🚫 Abandon message: " + body);
-            // Send to final abandoned DLQ
-            jmsTemplate.send("DLQ2::dlq2.abandoned", session -> {
-                TextMessage abandonedMsg = session.createTextMessage(body);
-                abandonedMsg.setIntProperty("xRetried", retried);
-                return abandonedMsg;
-            });
-            return;
-        }
-
-        System.out.println("🔁 Retrying: " + body + " (attempt: " + (retried + 1) + ")");
-
-        try {
-            Thread.sleep(3000); // give time to see in console
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        // send back with incremented retry count
-        jmsTemplate.send("BBroker::b", session -> {
-            TextMessage newMsg = session.createTextMessage(body);
-            newMsg.setIntProperty("xRetried", retried + 1); // 👈 retry count tracked by YOU
-            return newMsg;
-        });
-    }
+//    @JmsListener(destination = "DLQ2::dlq2", containerFactory = "myFactory")
+//    public void retryDLQ(Message message) throws JMSException {
+//        int retried = message.propertyExists("xRetried") ? message.getIntProperty("xRetried") : 0;
+//        String body = ((TextMessage) message).getText();
+//
+//        if (retried >= 3) {
+//            System.out.println("🚫 Abandon message: " + body);
+//            // Send to final abandoned DLQ
+//            jmsTemplate.send("DLQ2::dlq2.abandoned", session -> {
+//                TextMessage abandonedMsg = session.createTextMessage(body);
+//                abandonedMsg.setIntProperty("xRetried", retried);
+//                return abandonedMsg;
+//            });
+//            return;
+//        }
+//
+//        System.out.println("🔁 Retrying: " + body + " (attempt: " + (retried + 1) + ")");
+//
+//        try {
+//            Thread.sleep(3000); // give time to see in console
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//        }
+//
+//        // send back with incremented retry count
+//        jmsTemplate.send("BBroker::b", session -> {
+//            TextMessage newMsg = session.createTextMessage(body);
+//            newMsg.setIntProperty("xRetried", retried + 1); // 👈 retry count tracked by YOU
+//            return newMsg;
+//        });
+//    }
 
 
 

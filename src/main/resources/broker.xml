@@ -220,9 +220,10 @@ under the License.
 
          <address name="DLQ2">
             <anycast>
-               <queue name="dlq2"/>
+                <queue name="dlq2"/>
+                <!-- <queue name="dlq2.abandoned"/>  -->
             </anycast>
-         </address>
+        </address>
 
          <address name="DLQ3">
             <anycast>
@@ -293,6 +294,26 @@ under the License.
             <page-limit-messages>-1</page-limit-messages>
          </address-setting>
       </address-settings>
+
+      <diverts>
+         <!-- Retry from DLQ to original queue -->
+         <divert name="retryToBBroker">
+             <routing-name>retryRouting</routing-name>
+             <address>DLQ2::dlq2</address>
+             <forwarding-address>BBroker::b</forwarding-address>
+             <filter string="_AMQ_RedeliveryCount &lt; 3"/>
+             <exclusive>false</exclusive>
+         </divert>
+     
+         <!-- Route to final abandoned queue if retry count exceeds -->
+         <divert name="abandonAfterRetries">
+             <routing-name>abandonRouting</routing-name>
+             <address>DLQ2::dlq2</address>
+             <forwarding-address>DLQ2::dlq2</forwarding-address>
+             <filter string="_AMQ_RedeliveryCount &gt;= 3"/>
+             <exclusive>false</exclusive>
+         </divert>
+     </diverts>
 
 
       <!-- Uncomment the following if you want to use the Standard LoggingActiveMQServerPlugin
