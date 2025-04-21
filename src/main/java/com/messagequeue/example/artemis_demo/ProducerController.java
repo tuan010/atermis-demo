@@ -18,6 +18,11 @@ public class ProducerController {
     @PostMapping("/send")
     public String send(@RequestParam String queue, @RequestParam String message) {
         producer.sendToQueue(queue, message);
+        try {
+            Thread.sleep(10000); // 5 seconds delay
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         return "Message sent to " + queue;
     }
 }
