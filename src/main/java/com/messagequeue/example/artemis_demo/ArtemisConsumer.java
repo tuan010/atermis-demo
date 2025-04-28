@@ -1,11 +1,9 @@
 package com.messagequeue.example.artemis_demo;
 
-import jakarta.jms.JMSException;
-import jakarta.jms.Message;
-import jakarta.jms.Session;
-import jakarta.jms.TextMessage;
+import jakarta.jms.*;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,8 +20,12 @@ public class ArtemisConsumer {
 //    public void failQueueA(Message msg) throws JMSException {
 //        String body = ((TextMessage) msg).getText();
 //        System.out.println("🔥 FAIL a: " + body);
-//        throw new RuntimeException("fail a");
+//
+//        // simulate fail to trigger DLQ
+//        throw new RuntimeException("Force retry after 1 min");
 //    }
+
+
 
 //    @JmsListener(destination = "BBroker::b", containerFactory = "myFactory")
 //    public void failQueueB(Message msg) throws JMSException {
@@ -39,25 +41,29 @@ public class ArtemisConsumer {
 //        throw new RuntimeException("fail c");
 //    }
 
-//    @JmsListener(destination = "DLQ1::dlq1", containerFactory = "myFactory")
-//    public void retryFromDLQ1(TextMessage msg) throws JMSException {
-//        int retries = msg.propertyExists("x-retried") ? msg.getIntProperty("x-retried") : 0;
-//
-//        if (retries >= 3) {
-//            System.out.println("🛑 No more retries for: " + msg.getText());
-//            return;
-//        }
-//
-//        // Re-send to origin with incremented retry count
-//        Message newMsg = jmsTemplate.getConnectionFactory()
-//                .createConnection()
-//                .createSession(false, Session.AUTO_ACKNOWLEDGE)
-//                .createTextMessage(msg.getText());
-//
-//        newMsg.setIntProperty("x-retried", retries + 1);
-//        jmsTemplate.convertAndSend("ABroker::a", newMsg);
-//        System.out.println("🔁 Retried to A with x-retried=" + (retries + 1));
-//    }
+    @JmsListener(destination = "DLQ1::dlq1", containerFactory = "myFactory")
+    public void retryFromDLQ1(TextMessage msg) throws JMSException {
+        int retries = msg.propertyExists("x_retried") ? msg.getIntProperty("x_retried") : 0;
+
+        if (retries >= 3) {
+            System.out.println("🛑 No more retries for: " + msg.getText());
+            return;
+        }
+
+        // Re-send to origin with incremented retry count
+        Connection connection = jmsTemplate.getConnectionFactory().createConnection();
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        TextMessage newMsg = session.createTextMessage(msg.getText());
+
+        newMsg.setIntProperty("x_retried", retries + 1);
+        jmsTemplate.convertAndSend("ABroker::a", newMsg);
+
+        System.out.println("🔁 Retried to A with x_retried=" + (retries + 1));
+
+        session.close();
+        connection.close(); // important to close
+    }
+
 
 //    @JmsListener(destination = "DLQ2::dlq2", containerFactory = "myFactory")
 //    public void retryDLQ(Message message) throws JMSException {
@@ -90,7 +96,6 @@ public class ArtemisConsumer {
 //            return newMsg;
 //        });
 //    }
-
 
 
 //    @JmsListener(destination = "DLQ3::dlq3", containerFactory = "myFactory")

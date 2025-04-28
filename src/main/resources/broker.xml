@@ -198,42 +198,42 @@ under the License.
       <addresses>
          <address name="ABroker">
             <anycast>
-               <queue name="a"/>
+               <queue name="a" />
             </anycast>
          </address>
          <address name="BBroker">
             <anycast>
-               <queue name="b"/>
+               <queue name="b" />
             </anycast>
          </address>
          <address name="CBroker">
             <anycast>
-               <queue name="c"/>
+               <queue name="c" />
             </anycast>
          </address>
-         
+
          <address name="DLQ1">
             <anycast>
-               <queue name="dlq1"/>
+               <queue name="dlq1" />
             </anycast>
          </address>
 
          <address name="DLQ2">
             <anycast>
-                <queue name="dlq2"/>
-                <!-- <queue name="dlq2.abandoned"/>  -->
+               <queue name="dlq2" />
+               <!-- <queue name="dlq2.abandoned"/>  -->
             </anycast>
-        </address>
+         </address>
 
          <address name="DLQ3">
             <anycast>
-               <queue name="dlq3"/>
+               <queue name="dlq3" />
             </anycast>
          </address>
 
          <address name="ExpiryQueue">
             <anycast>
-               <queue name="ExpiryQueue"/>
+               <queue name="ExpiryQueue" />
             </anycast>
          </address>
       </addresses>
@@ -259,10 +259,11 @@ under the License.
          <address-setting match="ABroker::a">
             <dead-letter-address>DLQ1::dlq1</dead-letter-address>
             <max-delivery-attempts>3</max-delivery-attempts>
-            <redelivery-delay>1000</redelivery-delay>
-         </address-setting>
-
-          <address-setting match="BBroker::b">
+            <redelivery-delay>60000</redelivery-delay>
+            <max-redelivery-delay>60000</max-redelivery-delay>
+        </address-setting>
+        
+         <address-setting match="BBroker::b">
             <dead-letter-address>DLQ2::dlq2</dead-letter-address>
             <max-delivery-attempts>3</max-delivery-attempts>
             <redelivery-delay>1000</redelivery-delay>
@@ -273,6 +274,12 @@ under the License.
             <max-delivery-attempts>3</max-delivery-attempts>
             <redelivery-delay>1000</redelivery-delay>
          </address-setting>
+
+         <address-setting match="DLQ1::dlq1">
+            <redelivery-delay>5000</redelivery-delay> <!-- 5 seconds -->
+            <max-delivery-attempts>-1</max-delivery-attempts> <!-- optional: infinite retry -->
+        </address-setting>
+        
 
          <!-- Catch-all fallback -->
          <address-setting match="#">
@@ -295,25 +302,35 @@ under the License.
          </address-setting>
       </address-settings>
 
-      <diverts>
-         <!-- Retry from DLQ to original queue -->
+      <!-- <diverts>
+
+         
+         <divert name="retryToABroker">
+            <routing-name>retryRoutingA</routing-name>
+            <address>DLQ1::dlq1</address>
+            <forwarding-address>ABroker::a</forwarding-address>
+            <exclusive>false</exclusive>
+         </divert>
+
+
+         
          <divert name="retryToBBroker">
-             <routing-name>retryRouting</routing-name>
-             <address>DLQ2::dlq2</address>
-             <forwarding-address>BBroker::b</forwarding-address>
-             <filter string="_AMQ_RedeliveryCount &lt; 3"/>
-             <exclusive>false</exclusive>
+            <routing-name>retryRouting</routing-name>
+            <address>DLQ2::dlq2</address>
+            <forwarding-address>BBroker::b</forwarding-address>
+            <filter string="_AMQ_RedeliveryCount &lt; 3" />
+            <exclusive>false</exclusive>
          </divert>
-     
-         <!-- Route to final abandoned queue if retry count exceeds -->
+
+         
          <divert name="abandonAfterRetries">
-             <routing-name>abandonRouting</routing-name>
-             <address>DLQ2::dlq2</address>
-             <forwarding-address>DLQ2::dlq2</forwarding-address>
-             <filter string="_AMQ_RedeliveryCount &gt;= 3"/>
-             <exclusive>false</exclusive>
+            <routing-name>abandonRouting</routing-name>
+            <address>DLQ2::dlq2</address>
+            <forwarding-address>DLQ2::dlq2</forwarding-address>
+            <filter string="_AMQ_RedeliveryCount &gt;= 3" />
+            <exclusive>false</exclusive>
          </divert>
-     </diverts>
+      </diverts> -->
 
 
       <!-- Uncomment the following if you want to use the Standard LoggingActiveMQServerPlugin
@@ -321,16 +338,16 @@ under the License.
       -->
       <broker-plugins>
          <broker-plugin
-      class-name="org.apache.activemq.artemis.core.server.plugin.impl.LoggingActiveMQServerPlugin">
-            <property key="LOG_ALL_EVENTS" value="true"/>
-            <property key="LOG_CONNECTION_EVENTS" value="true"/>
-            <property key="LOG_SESSION_EVENTS" value="true"/>
-            <property key="LOG_CONSUMER_EVENTS" value="true"/>
-            <property key="LOG_DELIVERING_EVENTS" value="true"/>
-            <property key="LOG_SENDING_EVENTS" value="true"/>
-            <property key="LOG_INTERNAL_EVENTS" value="true"/>
+            class-name="org.apache.activemq.artemis.core.server.plugin.impl.LoggingActiveMQServerPlugin">
+            <property key="LOG_ALL_EVENTS" value="true" />
+            <property key="LOG_CONNECTION_EVENTS" value="true" />
+            <property key="LOG_SESSION_EVENTS" value="true" />
+            <property key="LOG_CONSUMER_EVENTS" value="true" />
+            <property key="LOG_DELIVERING_EVENTS" value="true" />
+            <property key="LOG_SENDING_EVENTS" value="true" />
+            <property key="LOG_INTERNAL_EVENTS" value="true" />
          </broker-plugin>
       </broker-plugins>
-      
+
    </core>
 </configuration>
